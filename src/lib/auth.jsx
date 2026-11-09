@@ -3,17 +3,25 @@ import { api, onUnauthorized, setCsrfToken } from './api';
 
 const AuthCtx = createContext(null);
 
+// panel/session hostingda yo'q bo'lsa, eski router so'rovni legacy.php ga beradi va u AUTH_REQUIRED qaytaradi.
+const OUTDATED_CODES = ['AUTH_REQUIRED', 'ENDPOINT_NOT_FOUND', 'BAD_RESPONSE'];
+
 export function AuthProvider({ children }) {
-  const [state, setState] = useState({ loading: true, admin: false, adminId: null, botUsername: null, error: '' });
+  const [state, setState] = useState({ loading: true, admin: false, adminId: null, botUsername: null, error: '', backendOutdated: false });
 
   const refresh = useCallback(async () => {
     try {
       const s = await api.get('panel/session');
       setCsrfToken(s.csrfToken);
-      setState({ loading: false, admin: !!s.admin, adminId: s.adminId, botUsername: s.botUsername, error: '' });
+      setState({ loading: false, admin: !!s.admin, adminId: s.adminId, botUsername: s.botUsername, error: '', backendOutdated: false });
       return s;
     } catch (e) {
-      setState((p) => ({ ...p, loading: false, admin: false, error: e.message }));
+      const outdated = OUTDATED_CODES.includes(e.code);
+      if (outdated) {
+        // CSRF tokenni eski endpointdan olamiz — kirish (auth/admin_token) baribir ishlay olsin
+        try { const me = await api.get('auth/me'); setCsrfToken(me?.csrfToken); } catch { /* tarmoq */ }
+      }
+      setState((p) => ({ ...p, loading: false, admin: false, error: e.message, backendOutdated: outdated }));
       return null;
     }
   }, []);
@@ -25,7 +33,11 @@ export function AuthProvider({ children }) {
   const exchange = useCallback(async (token) => {
     await refresh(); // CSRF token
     await api.post('auth/admin_token', { token });
-    return refresh();
+    const s = await refresh();
+    if (!s) {
+      throw new Error("Token qabul qilindi, lekin backendda admin panel API (api/panel) topilmadi. Backend yangilanishini hostingga yuklang.");
+    }
+    return s;
   }, [refresh]);
 
   const logout = useCallback(async () => {

@@ -33,8 +33,11 @@ Login/parol yo'q. Admin platforma botiga `/panelweb` yozadi → bot `ADMIN_PANEL
    - `BACKEND_ORIGIN` = PHP backend manzili (masalan `https://6a4cc7f182c08.xvest2.ru`)
    - `VITE_BACKEND_URL` = shu manzil (chatdagi rasmlar uchun)
    - `PROXY_SHARED_SECRET` = backend `.env` dagi bilan bir xil (ixtiyoriy)
-3. Domen ulang (masalan `admin.makefy.uz`).
-4. **Backend `.env`**: `ADMIN_PANEL_URL=https://admin.makefy.uz` — shundan keyin `/panelweb` yangi panelni ochadi.
+3. Hozirgi manzil: **https://fyadmin.vercel.app**
+4. **Backend `.env`**: `ADMIN_PANEL_URL=https://fyadmin.vercel.app` — shundan keyin botdagi `/panelweb` havolasi
+   (`Admin/enter.php`) yangi panelga yo'naltiradi.
+5. **Backend fayllari** (`api/panel/*` va boshqalar) hostingga yuklangan bo'lishi shart. Yuklanmagan bo'lsa,
+   kirish sahifasida «Backend yangilanmagan» ogohlantirishi chiqadi.
 
 Brauzer faqat `/api/index?__path=…` ga murojaat qiladi (Vercel funksiyasi `api/index.js` → backend), shuning uchun
 sessiya cookie'si birinchi tomon bo'lib qoladi va CORS sozlash shart emas.
