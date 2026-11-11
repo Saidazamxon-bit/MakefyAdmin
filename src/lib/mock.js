@@ -119,6 +119,17 @@ export async function mockRequest(path, method, body) {
       return { threads: users.slice(0, 7).map((u, i) => ({ userId: u.userId, name: u.name, tgUsername: u.tgUsername, unread: [2, 0, 1, 0, 0, 3, 0][i], lastText: ['@starska_shop1bot', "Rahmat, ishladi!", "To'lov qanday qilinadi?", 'Ok', 'Botimga Web App qo‘shsa bo‘ladimi?', 'Salom', "Tushundim"][i], lastAt: new Date(Date.now() - i * 54e5).toISOString(), lastFrom: i === 1 ? 'admin' : 'user' })) };
     }
     case 'panel/broadcast': return { recipients: 2419, batches: [{ id: 14, total: 2398, sent: 2311, failed: 87, status: 'done', created: '2026-11-06 19:00:12', finished: '2026-11-06 19:03:40' }], history: [{ id: 5, body: "🎉 Yangi shablon: Mafiya Bot! Do'stlaringiz bilan guruhda o'ynang.", recipients: 2398, created_at: '2026-11-06 19:00:12' }] };
+    case 'panel/autopay': return {
+      config: { botToken: true, botUsername: 'MakefyPayBot', botLink: 'https://t.me/MakefyPayBot', workerSecret: true, workerOnline: true, uzcard: false, platformUserbot: false },
+      summary: { botsLive: 1, botsTotal: 2, sessionsActive: 1, today: 150120, month: 2400360, pending: 2, failed: 0 },
+      bots: [
+        { bot: 'kinochi_bot', turi: 'kino', owner: '7919670157', ownerName: 'Saidazam', enabled: true, card: '**** 4521', cardType: 'humo', cardOwner: 'ALI VALIYEV', userbot: true, minAmount: 1000, live: true, sum: 2400360, count: 96, todaySum: 150120 },
+        { bot: 'donat_uz_bot', turi: 'donatgame', owner: '6534936017', ownerName: 'Bekzod', enabled: false, card: '', cardType: 'humo', cardOwner: '', userbot: false, minAmount: 1000, live: false, sum: 0, count: 0, todaySum: 0 },
+      ],
+      sessions: [{ id: 3, owner: '7919670157', ownerName: 'Saidazam', scope: 'user', phone: '+99890…567', status: 'active', error: '', account: 'Saidazam', updated: '2026-11-11 12:40' }],
+      payments: { items: [{ id: 96, bot: 'kinochi_bot', owner_uid: '7919670157', end_user: 6558150712, purpose: 'movie:12', card_last4: '4521', card_type: 'humo', amount_req: '15000.00', amount_final: '15037.00', status: 'paid', credited: true, credit_tries: 0, credit_error: null, created: '2026-11-11 12:41' }], total: 1, page: 1, limit: 30 },
+      unmatched: [],
+    };
     case 'panel/payments': return {
       cards: [{ id: 1, number: '**** **** **** 4417', last4: '4417', owner: 'SAIDAZAM A.', type: 'humo', active: true, created: '2026-09-01', received: 38400000 }, { id: 2, number: '**** **** **** 0912', last4: '0912', owner: 'SAIDAZAM A.', type: 'uzcard', active: false, created: '2026-10-11', received: 1200000 }],
       payments: { items: users.slice(0, 8).map((u, i) => ({ id: 120 - i, user_id: u.userId, name: u.name, last4: '4417', amount_req: [50000, 100000, 20000, 30000, 250000, 10000, 60000, 45000][i], amount_final: [50007, 100013, 20002, 30011, 250004, 10009, 60001, 45003][i], status: ['paid', 'paid', 'pending', 'expired', 'paid', 'paid', 'cancelled', 'paid'][i], created: `2026-11-0${9 - i} 1${i}:20`, paid_at: i % 3 ? `2026-11-0${9 - i} 1${i}:24:00` : null })), total: 8, page: 1, limit: 30 },

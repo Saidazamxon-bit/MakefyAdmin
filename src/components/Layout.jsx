@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Bot, Brain, CreditCard, Crown, FileClock, Gauge, Layers, LogOut, Megaphone, Menu, MessageSquare, Moon,
-  PackageCheck, RefreshCw, Settings, Shapes, ShieldCheck, Sun, Ticket, Tv, Users, X,
+  PackageCheck, RefreshCw, Settings, Shapes, ShieldCheck, Sun, Ticket, Tv, Users, X, Zap,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useApi } from '../lib/hooks';
@@ -19,6 +19,7 @@ export const NAV = [
   ] },
   { group: 'Moliya', items: [
     { to: '/payments', label: "To'lovlar va kartalar", icon: CreditCard },
+    { to: '/autopay', label: "Avto to'lov (botlar)", icon: Zap },
     { to: '/plans', label: 'Platforma tariflari', icon: Crown },
     { to: '/bot-plans', label: 'Bot tariflari', icon: Layers },
     { to: '/promocodes', label: 'Promokodlar', icon: Ticket },
