@@ -9,17 +9,30 @@ import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Loading, Modal, Pag
 
 const PST = { paid: ["To'langan", 'ok'], pending: ['Kutilmoqda', 'warn'], expired: ['Muddati o‘tdi', 'gray'], cancelled: ['Bekor', 'gray'] };
 
+function cardType(n) {
+  const d = String(n || '').replace(/\D/g, '');
+  if (d.startsWith('9860')) return 'humo';
+  if (d.startsWith('8600') || d.startsWith('5614')) return 'uzcard';
+  return '';
+}
+
 function CardModal({ onClose, onDone }) {
-  const [f, setF] = useState({ number: '', owner: '', type: 'humo' });
+  const [f, setF] = useState({ number: '', owner: '' });
   const { busy, run } = useAction();
-  const save = async () => { if (await run('c', () => api.post('panel/payments', { action: 'card_add', ...f }))) { onDone(); onClose(); } };
+  const type = cardType(f.number);
+  const save = async () => { if (await run('c', () => api.post('panel/payments', { action: 'card_add', ...f, type: type || 'humo' }))) { onDone(); onClose(); } };
   return (
-    <Modal open onClose={onClose} title="Karta qo'shish" footer={<><Button onClick={onClose}>Bekor qilish</Button><Button variant="primary" loading={busy === 'c'} onClick={save}>Qo'shish</Button></>}>
+    <Modal open onClose={onClose} title="Karta qo'shish" footer={<><Button onClick={onClose}>Bekor qilish</Button><Button variant="primary" loading={busy === 'c'} disabled={!type || f.owner.trim().length < 2} onClick={save}>Qo'shish</Button></>}>
       <div className="space-y-4">
-        <Field label="Karta turi"><Select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}><option value="humo">Humo (9860…)</option><option value="uzcard">Uzcard (8600…)</option></Select></Field>
-        <Field label="Karta raqami"><Input inputMode="numeric" value={f.number} onChange={(e) => setF({ ...f, number: e.target.value })} placeholder="9860 0000 0000 0000" /></Field>
-        <Field label="Karta egasi"><Input value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })} placeholder="ISM FAMILIYA" /></Field>
-        <p className="text-xs text-muted">To'lovlar @HUMOcardbot xabarlaridan avtomatik aniqlanadi (karta oxirgi 4 raqami + aniq summa).</p>
+        <Field label="1. Karta raqami" hint={type ? (type === 'humo' ? 'Humo kartasi' : 'Uzcard kartasi') : 'Humo (9860…) yoki Uzcard (8600…)'}><Input inputMode="numeric" value={f.number} onChange={(e) => setF({ ...f, number: e.target.value })} placeholder="9860 0000 0000 0000" /></Field>
+        <Field label="2. Karta egasi (ism-familiya)"><Input value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })} placeholder="ISM FAMILIYA" /></Field>
+        {type && (
+          <p className="rounded-lg bg-surface-2 p-3 text-xs">
+            📲 Bu kartani <b>{type === 'uzcard' ? '@CardXabarBot' : '@HUMOcardbot'}</b> ga ulang — pul tushganda xabar o'sha botga keladi.
+            To'lov xabardagi kartaning <b>oxirgi 4 raqami</b> va aniq summa bo'yicha aniqlanadi. Xabar keladigan akkaunt platforma userboti sifatida ulangan bo'lishi kerak
+            (botda /panel → «💳 Avto to'lov» → «Platforma userboti»).
+          </p>
+        )}
       </div>
     </Modal>
   );
@@ -57,7 +70,7 @@ export default function Payments() {
         <Stat label="Bugun" value={money(s.today)} tone="ok" icon={CreditCard} />
         <Stat label="Shu oy" value={money(s.month)} tone="ok" />
         <Stat label="Kutilayotgan to'lovlar" value={num(s.pending)} tone="warn" />
-        <Stat label="Avto-to'lov" value={s.autoPay ? 'Yoqilgan' : "O'chiq"} tone={s.autoPay ? 'ok' : 'bad'} hint={s.autoPay ? undefined : 'Faol karta va HUMOCARD_HOOK_SECRET kerak'} />
+        <Stat label="Avto-to'lov" value={s.autoPay ? 'Yoqilgan' : "O'chiq"} tone={s.autoPay ? 'ok' : 'bad'} hint={s.autoPay ? 'Saytda va botda ishlaydi' : 'Faol karta va platforma userboti kerak'} />
       </div>
 
       <Card title="Qabul qiluvchi kartalar">
