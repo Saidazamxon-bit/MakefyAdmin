@@ -15,6 +15,7 @@ const Requests = lazy(() => import('./pages/Requests'));
 const Chat = lazy(() => import('./pages/Chat'));
 const Broadcast = lazy(() => import('./pages/Broadcast'));
 const Payments = lazy(() => import('./pages/Payments'));
+const Autopay = lazy(() => import('./pages/Autopay'));
 const Plans = lazy(() => import('./pages/Plans'));
 const BotPlans = lazy(() => import('./pages/BotPlans'));
 const Promocodes = lazy(() => import('./pages/Promocodes'));
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="chat/:uid" element={<Chat />} />
           <Route path="broadcast" element={<Broadcast />} />
           <Route path="payments" element={<Payments />} />
+          <Route path="autopay" element={<Autopay />} />
           <Route path="plans" element={<Plans />} />
           <Route path="bot-plans" element={<BotPlans />} />
           <Route path="promocodes" element={<Promocodes />} />
