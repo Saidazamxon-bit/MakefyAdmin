@@ -51,7 +51,7 @@ function msgsFor(uid) {
 const DIDS = ['classic', 'minimal', 'bento', 'glass', 'futuristic', 'brutal'];
 const DNAMES = { classic: 'Standart', minimal: 'Minimalism', bento: 'Bento Grid', glass: 'Glassmorphism', futuristic: 'Dark Mode / Futuristic', brutal: 'Neo-Brutalism' };
 const WA = {
-  global: { disabled: [], colors: true, presets: ['#5b7cfa', '#7c6cf6', '#ec4899', '#ef4444', '#f97316', '#f2b53b', '#22c55e', '#14b8a6', '#0ea5e9', '#111827'] },
+  global: { disabled: [], lockedTypes: [], colors: true, presets: ['#5b7cfa', '#7c6cf6', '#ec4899', '#ef4444', '#f97316', '#f2b53b', '#22c55e', '#14b8a6', '#0ea5e9', '#111827'] },
   plans: {}, // id -> {designs, colors}
   bots: Object.fromEntries(bots.map((b, i) => [b.username, { design: DIDS[i % 6], colors: i % 4 === 1 ? { accent: '#ef4444', accent2: '' } : null, force: i === 3 }])),
 };
@@ -64,6 +64,7 @@ const botPlanItems = () => types.slice(0, 3).flatMap(([t, n], ti) => [['oddiy', 
 function waView(q) {
   const plans = botPlanItems();
   const applied = (b, s) => {
+    if (s.locked || WA.global.lockedTypes.includes(b.type)) return { design: 'classic', colors: null, locked: true };
     const p = plans.find((x) => x.botTuri === b.type && x.kalit === b.plan);
     const allowed = !WA.global.disabled.includes(s.design) && (s.force || !p || !p.features.webapp_designs || p.features.webapp_designs.includes(s.design));
     const colorsOk = WA.global.colors && (s.force || !p || p.features.webapp_colors !== false);
@@ -76,6 +77,7 @@ function waView(q) {
     designs: DIDS.map((id) => ({ id, name: DNAMES[id], bots: counts[id] || 0 })),
     plans: plans.map((p) => ({ id: p.id, botTuri: p.botTuri, typeName: p.typeName, kalit: p.kalit, nomi: p.nomi, bosqich: p.bosqich, faol: p.faol, designs: p.features.webapp_designs || null, colors: p.features.webapp_colors !== false })),
     bots: list.filter((b) => !q || b.username.includes(q)),
+    types: [...new Map(list.map((b) => [b.turi, { id: b.turi, name: b.typeName, bots: list.filter((x) => x.turi === b.turi).length }])).values()],
     total: list.length,
   };
 }
@@ -93,6 +95,10 @@ const MOD = {
   ],
 };
 
+const TMETA = tpl.map((t) => ({ slug: t.id, name: t.name, icon: t.icon, iconUrl: null, category: t.category, description: t.description, earn: '',
+  highlights: ['Tayyor admin panel', 'Web App', 'Avto to‘lov'], tags: ['Web App'], buttons: ['🛒 Katalog', '👤 Profil'],
+  features: [{ icon: '⚡', title: 'Tez ishga tushadi', desc: '2 daqiqada' }, { icon: '💳', title: 'To‘lov', desc: 'Avto yoki qo‘lda' }] }));
+
 export async function mockRequest(path, method, body) {
   await wait();
   const [p, query = ''] = path.replace(/^\/+/, '').replace(/\.php/, '').split('?');
@@ -101,9 +107,10 @@ export async function mockRequest(path, method, body) {
   if (method !== 'GET') {
     if (p === 'auth/admin_token') return {};
     if (p === 'panel/webapp_designs') {
-      if (body.action === 'global') { WA.global = { disabled: body.disabled, colors: body.colors, presets: body.presets }; return { message: 'Saqlandi.', global: WA.global }; }
+      if (body.action === 'global') { WA.global = { ...WA.global, disabled: body.disabled, colors: body.colors, presets: body.presets }; return { message: 'Saqlandi.', global: WA.global }; }
+      if (body.action === 'lock_type') { WA.global.lockedTypes = WA.global.lockedTypes.filter((t) => t !== body.turi).concat(body.locked ? [body.turi] : []); return { message: 'Saqlandi.', global: WA.global }; }
       if (body.action === 'plan') { WA.plans[body.id] = { designs: body.designs, colors: body.colors }; return { message: 'Tarif yangilandi.' }; }
-      if (body.action === 'bot') { WA.bots[body.bot] = { design: body.design, colors: body.colors, force: body.force }; return { message: 'Bot dizayni saqlandi.' }; }
+      if (body.action === 'bot') { WA.bots[body.bot] = { design: body.design, colors: body.colors, force: body.force, locked: !!body.locked }; return { message: 'Bot dizayni saqlandi.' }; }
     }
     if (p === 'panel/bot_plans' && body.action === 'create') return { message: "Yangi tarif qo'shildi (namunaviy rejim)." };
     if (p === 'panel/bot_plans' && body.action === 'delete') return { message: "Tarif o'chirildi (namunaviy rejim)." };
@@ -112,6 +119,13 @@ export async function mockRequest(path, method, body) {
       return { message: 'Saqlandi.' };
     }
     if (p === 'panel/session') return { admin: false };
+    if (p === 'panel/template_meta') {
+      const t = TMETA.find((x) => x.slug === body.slug);
+      if (t && body.action === 'save') Object.assign(t, body.data);
+      if (t && body.action === 'icon') t.iconUrl = body.image;
+      if (t && body.action === 'icon_reset') t.iconUrl = null;
+      return { message: 'Saqlandi (namunaviy rejim).', templates: TMETA };
+    }
     if (p === 'panel/moderation') {
       if (body.action === 'test') return { hit: /kazino|narko/i.test(body.text || '') ? { word: 'kazino', cat: 'qimor', catName: 'Qimor va kazino' } : null };
       if (body.action === 'add') MOD.custom.unshift({ word: body.word, cat: body.cat, by: '7919670157', at: '2026-11-12 10:00:00' });
@@ -127,6 +141,7 @@ export async function mockRequest(path, method, body) {
   }
   switch (p) {
     case 'panel/moderation': return MOD;
+    case 'panel/template_meta': return { templates: TMETA };
     case 'panel/session': return { admin: true, adminId: '7919670157', csrfToken: 'mock', botUsername: 'Makefybot' };
     case 'panel/dashboard': return {
       stats: { users: 2431, usersToday: 186, banned: 12, balance: 18450000, bots: 642, botsActive: 518, botsPaused: 31, requestsPending: 3, requestsPaid: 1, chatUnread: 5, paymentsToday: 1100000, payments30: 14600000, paymentsPending: 4, jobsPending: 0 },
