@@ -8,7 +8,7 @@ import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Loading, Modal, Pag
 
 /*
  * Baraban (backend: api/panel/baraban.php, includes/baraban.php).
- * Sovg'alar va ularning ehtimoli (og'irligi), zaxira, NFT belgisi; sozlamalar (kunlik bepul chipta, chipta narxi);
+ * Sovg'alar va ularning ehtimoli (og'irligi), zaxira, NFT belgisi; sozlamalar (haftalik bepul chipta, chipta narxi);
  * foydalanuvchiga chipta berish; aylantirishlar jurnali — qo'lda beriladigan sovg'alarni «Berildi» deb belgilash.
  */
 const TYPE_TONE = { balans: 'ok', chipta: 'warn', tarif: 'warn', bot_kun: 'info', chegirma: 'brand', sovga: 'brand', bosh: 'gray' };
@@ -130,7 +130,7 @@ function SettingsCard({ s, onSaved }) {
     <Card title="Sozlamalar" actions={<Button variant={dirty ? 'primary' : 'secondary'} disabled={!dirty} loading={busy === 'st'} onClick={save}>Saqlash</Button>}>
       <div className="grid gap-4 sm:grid-cols-4 sm:items-end">
         <div className="pb-2"><Switch checked={f.enabled} onChange={(v) => setF((x) => ({ ...x, enabled: v }))} label={f.enabled ? 'Baraban yoqilgan' : "Baraban o'chirilgan"} /></div>
-        <Field label="Kunlik bepul chipta" hint="0 = o'chirilgan"><Input type="number" min="0" max="10" value={f.dailyFree} onChange={(e) => setF((x) => ({ ...x, dailyFree: e.target.value }))} /></Field>
+        <Field label="Haftalik bepul chipta (har 7 kunda)" hint="0 = o'chirilgan"><Input type="number" min="0" max="10" value={f.dailyFree} onChange={(e) => setF((x) => ({ ...x, dailyFree: e.target.value }))} /></Field>
         <Field label="Chipta narxi (so'm)" hint="0 = sotilmaydi"><Input type="number" min="0" value={f.ticketPrice} onChange={(e) => setF((x) => ({ ...x, ticketPrice: e.target.value }))} /></Field>
         <Field label="Bir martada maks." hint="Sotib olish"><Input type="number" min="1" max="100" value={f.maxBuy} onChange={(e) => setF((x) => ({ ...x, maxBuy: e.target.value }))} /></Field>
       </div>
