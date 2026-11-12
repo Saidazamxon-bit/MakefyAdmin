@@ -101,15 +101,19 @@ const TMETA = tpl.map((t) => ({ slug: t.id, name: t.name, icon: t.icon, iconUrl:
 
 const BRB = {
   settings: { enabled: true, dailyFree: 1, ticketPrice: 5000, maxBuy: 20 },
-  types: { balans: "Balans (so'm)", chipta: 'Chipta', sovga: "Sovg'a (qo'lda beriladi)", bosh: "Bo'sh (omad kelmadi)" },
-  prizes: [['50 Stars', '⭐', 'sovga', 50, 10, false, -1], ["5 000 so'm", '💰', 'balans', 5000, 30, false, -1], ['+1 chipta', '🎟', 'chipta', 1, 20, false, -1],
-    ['Muzqaymoq', '🍦', 'sovga', 0, 0.5, true, 3], ['Xmas paypoq', '🧦', 'sovga', 0, 0.5, true, 0], ['Omad kelmadi', '🙈', 'bosh', 0, 39, false, -1]]
-    .map(([nomi, emoji, turi, qiymat, vazn, nft, soni], i) => ({ id: i + 1, nomi, emoji, rasm: '', turi, qiymat, vazn, nft, soni, faol: true, tartib: i })),
-  stats: { today: 37, total: 1240, pending: 2, paid: 410000, sold: 96, tickets: 58 },
+  types: { balans: "Balans (so'm)", chipta: "Qo'shimcha aylantirish", tarif: 'Akkaunt tarifi (kun)', bot_kun: 'Mavjud botga +kun', chegirma: 'Chegirma kuponi (%)', sovga: "Sovg'a (qo'lda beriladi)", bosh: "Bo'sh (omad kelmadi)" },
+  scopes: { tarif: 'Akkaunt tarifiga', bot: "Bot to'loviga (bot yaratish / keyingi bot)", shablon: "Bot shabloniga (oylik to'lov)" },
+  plans: [{ kalit: 'pro', nomi: 'Pro', narxi: 50000, muddat_kun: 30 }, { kalit: 'premium', nomi: 'Premium', narxi: 120000, muddat_kun: 30 }],
+  prizes: [['7 kunlik tarif', 'tarif', 7, 'pro', 1.2], ['1 oylik tarif', 'tarif', 30, 'pro', 0.3], ['Mavjud botga +10 kun', 'bot_kun', 10, '', 2], ["50 000 so'm", 'balans', 50000, '', 0.12],
+    ["5 000 so'm", 'balans', 5000, '', 4], ['30% chegirma', 'chegirma', 30, 'tarif', 2], ['1 ta bot shabloni bepul', 'chegirma', 100, 'shablon', 0.3],
+    ['Yana 1 marta aylantirish', 'chipta', 1, '', 6], ['50 Stars', 'sovga', 50, '', 0.5], ['Keyingi safar omad!', 'bosh', 0, '', 12]]
+    .map(([nomi, turi, qiymat, param, vazn], i) => ({ id: i + 1, nomi, rasm: '', turi, qiymat, param, vazn, nft: false, soni: -1, faol: true, tartib: i })),
+  stats: { today: 37, total: 1240, pending: 2, paid: 410000, sold: 96, tickets: 58, coupons: 41, couponsUsed: 17 },
   spins: [
-    { id: 3, user_id: '5600007919', ism: 'Dilnoza Karimova', nomi: '50 Stars', emoji: '⭐', rasm: '', turi: 'sovga', holat: 'kutilmoqda', created_at: '2026-11-12 16:40:02' },
-    { id: 2, user_id: '5600015838', ism: 'Sardor Aliyev', nomi: 'Muzqaymoq', emoji: '🍦', rasm: '', turi: 'sovga', holat: 'kutilmoqda', created_at: '2026-11-12 15:12:44' },
-    { id: 1, user_id: '5600000000', ism: 'Jasur Rahimov', nomi: "5 000 so'm", emoji: '💰', rasm: '', turi: 'balans', holat: 'berildi', created_at: '2026-11-12 14:01:10' },
+    { id: 4, user_id: '5600002211', ism: 'Aziz Tursunov', nomi: 'Mavjud botga +12 kun', rasm: '', turi: 'bot_kun', qiymat: 12, holat: 'tanlash', izoh: '', created_at: '2026-11-12 17:05:40' },
+    { id: 3, user_id: '5600007919', ism: 'Dilnoza Karimova', nomi: '50 Stars', rasm: '', turi: 'sovga', qiymat: 50, holat: 'kutilmoqda', izoh: '', created_at: '2026-11-12 16:40:02' },
+    { id: 2, user_id: '5600015838', ism: 'Sardor Aliyev', nomi: '30% chegirma', rasm: '', turi: 'chegirma', qiymat: 30, holat: 'kupon', izoh: 'Kupon #12', created_at: '2026-11-12 15:12:44' },
+    { id: 1, user_id: '5600000000', ism: 'Jasur Rahimov', nomi: '7 kunlik tarif', rasm: '', turi: 'tarif', qiymat: 7, holat: 'berildi', izoh: 'pro → 2026-11-19', created_at: '2026-11-12 14:01:10' },
   ],
 };
 function brbView() {
@@ -145,7 +149,8 @@ export async function mockRequest(path, method, body) {
         if (row.id) BRB.prizes = BRB.prizes.map((x) => (x.id === row.id ? { ...x, ...row } : x)); else BRB.prizes.push({ ...row, id: Date.now() });
       }
       if (body.action === 'prize_delete') BRB.prizes = BRB.prizes.filter((x) => x.id !== body.id);
-      if (body.action === 'spin_status') BRB.spins = BRB.spins.map((x) => (x.id === body.id ? { ...x, holat: body.holat } : x));
+      if (body.action === 'spin_status') BRB.spins = BRB.spins.map((x) => (x.id === body.id ? { ...x, holat: body.holat, izoh: body.izoh ? `@${String(body.izoh).replace(/^@/, '')}` : x.izoh } : x));
+      if (body.action === 'seed') return { ...brbView(), message: "0 ta boshlang'ich sovg'a qo'shildi (namunaviy rejim)." };
       return { ...brbView(), message: 'Saqlandi (namunaviy rejim).' };
     }
     if (p === 'panel/template_meta') {
