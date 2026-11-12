@@ -29,6 +29,7 @@ const Security = lazy(() => import('./pages/Security'));
 const Moderation = lazy(() => import('./pages/Moderation'));
 const Baraban = lazy(() => import('./pages/Baraban'));
 const TemplateContent = lazy(() => import('./pages/TemplateContent'));
+const DirectLinks = lazy(() => import('./pages/DirectLinks'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function Protected({ children }) {
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="payments" element={<Payments />} />
           <Route path="autopay" element={<Autopay />} />
           <Route path="plans" element={<Plans />} />
+          <Route path="direct-links" element={<DirectLinks />} />
           <Route path="bot-plans" element={<BotPlans />} />
           <Route path="webapp-designs" element={<WebappDesigns />} />
           <Route path="promocodes" element={<Promocodes />} />

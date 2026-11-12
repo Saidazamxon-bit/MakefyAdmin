@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useId } from 'react';
 import { ChevronLeft, ChevronRight, Inbox, Loader2, Search, X } from 'lucide-react';
 
@@ -241,8 +242,9 @@ export function Modal({ open, onClose, title, children, footer, wide }) {
     return () => { document.removeEventListener('keydown', k); document.body.style.overflow = prev; };
   }, [open, onClose]);
   if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+  // Portal: sahifa konteyneridagi animatsiya (transform) «fixed» ni buzib, oynani sahifa pastiga tushirmasin
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div role="dialog" aria-modal="true" className={cx('animate-in flex max-h-[92vh] w-full flex-col rounded-t-2xl border border-line bg-surface shadow-2xl sm:rounded-2xl', wide ? 'sm:max-w-3xl' : 'sm:max-w-lg')}>
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <h3 className="font-semibold">{title}</h3>
@@ -251,7 +253,8 @@ export function Modal({ open, onClose, title, children, footer, wide }) {
         <div className="overflow-y-auto px-5 py-4">{children}</div>
         {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-3">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

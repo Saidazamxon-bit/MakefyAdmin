@@ -1,50 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
-import { ImagePlus, Plus, RotateCcw, Save, Trash2, Undo2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Save, Trash2, Undo2 } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
 import { useApi } from '../lib/hooks';
 import { useAction, useFeedback } from '../components/feedback';
-import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Loading, PageHeader, Textarea, cx } from '../components/ui';
+import { Button, Card, Empty, ErrorBox, Field, Input, Loading, PageHeader, Textarea, cx } from '../components/ui';
 
 /*
  * Shablon katalogi (backend: api/panel/template_meta.php, includes/template_admin.php).
- * Saytdagi «Bozor» / «Bot yaratish» kartasi va shablon sahifasidagi barcha matnlar hamda logotip ikonkasi.
+ * Saytdagi «Bozor» / «Bot yaratish» kartasi va shablon sahifasidagi barcha matnlar.
  * Narx va limitlar — «Bot tariflari» bo'limida.
  */
 
 const lines = (a) => (Array.isArray(a) ? a.join('\n') : '');
 const toList = (s) => String(s || '').split('\n').map((x) => x.trim()).filter(Boolean);
-
-/**
- * Rasmni brauzerda 512×512 shaffof kvadratga JOYLAYDI (kesilmaydi, cho'zilmaydi — butun rasm ko'rinadi).
- * Natija PNG; 600 KB dan oshsa WEBP. Server 600 KB / 1024 px chegarasidan oshmaydi.
- */
-function fileToIcon(file) {
-  return new Promise((resolve, reject) => {
-    if (!/^image\/(png|jpe?g|webp|gif|svg\+xml)$/.test(file.type)) { reject(new Error('PNG, JPG, WEBP yoki SVG rasm tanlang.')); return; }
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const size = 512;
-      const w = img.naturalWidth || size;
-      const h = img.naturalHeight || size;
-      const k = Math.min(size / w, size / h);
-      const dw = Math.round(w * k);
-      const dh = Math.round(h * k);
-      const c = document.createElement('canvas');
-      c.width = size; c.height = size;
-      const ctx = c.getContext('2d');
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
-      URL.revokeObjectURL(url);
-      let out = c.toDataURL('image/png');
-      if (out.length > 780000) out = c.toDataURL('image/webp', 0.9);
-      if (out.length > 780000) out = c.toDataURL('image/jpeg', 0.88);
-      resolve(out);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Rasmni o'qib bo'lmadi.")); };
-    img.src = url;
-  });
-}
 
 function TileIcon({ t, size = 44 }) {
   return t.iconUrl
@@ -63,8 +31,7 @@ function Editor({ t, onUpdated }) {
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
   const setFeat = (i, k, v) => setF((x) => ({ ...x, features: x.features.map((r, j) => (j === i ? { ...r, [k]: v } : r)) }));
   const { busy, run } = useAction();
-  const { confirm, toast } = useFeedback();
-  const fileRef = useRef(null);
+  const { confirm } = useFeedback();
 
   const post = async (key, body) => {
     const r = await run(key, () => api.post('panel/template_meta', { slug: t.slug, ...body }));
@@ -76,27 +43,10 @@ function Editor({ t, onUpdated }) {
     highlights: toList(f.highlights), buttons: toList(f.buttons), tags: f.tags.split(',').map((x) => x.trim()).filter(Boolean),
     features: f.features.filter((x) => x.title.trim()),
   } });
-  const onFile = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    try { await post('icon', { action: 'icon', image: await fileToIcon(file) }); }
-    catch (err) { toast(err.message, 'bad'); }
-  };
+
 
   return (
     <div className="space-y-4">
-      <Card title="Logotip ikonkasi" subtitle="Saytdagi katalog kartalari, bot sahifasi va «Botlarim» ro'yxatida ko'rinadi. Rasm kesilmaydi — butunligicha kvadratga joylanadi. Xohlagan payt boshqasiga almashtirasiz; rasm yangilanishlarda o'chib ketmaydi.">
-        <div className="flex flex-wrap items-center gap-4">
-          <TileIcon t={t} size={88} />
-          <div className="flex flex-wrap gap-2">
-            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" className="hidden" onChange={onFile} />
-            <Button variant="primary" icon={ImagePlus} loading={busy === 'icon'} onClick={() => fileRef.current?.click()}>Rasm yuklash</Button>
-            {t.iconUrl && <Button icon={RotateCcw} loading={busy === 'reset'} onClick={async () => { if (await confirm({ text: 'Standart ikonkaga qaytarilsinmi?' })) post('reset', { action: 'icon_reset' }); }}>Standartga qaytarish</Button>}
-          </div>
-          {t.iconUrl ? <Badge tone="brand">Admin rasmi</Badge> : <Badge>Standart ikonka</Badge>}
-        </div>
-      </Card>
 
       <Card title="Matnlar" subtitle="Saqlangach saytda darhol ko'rinadi. Matnlar ham moderatsiya filtridan o'tadi."
         actions={<>

@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Bot, Brain, CreditCard, Gift, LayoutGrid, Crown, FileClock, Gauge, Layers, LogOut, Megaphone, Menu, MessageSquare, Moon,
-  PackageCheck, Palette, RefreshCw, Settings, Shapes, ShieldAlert, ShieldCheck, Sun, Ticket, Tv, Users, X, Zap,
-} from 'lucide-react';
+  PackageCheck, Palette, RefreshCw, Settings, Shapes, ShieldAlert, ShieldCheck, Sun, Ticket, Tv, Users, X, Zap, Link2 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useApi } from '../lib/hooks';
 import { cx } from './ui';
@@ -34,6 +33,7 @@ export const NAV = [
     { to: '/categories', label: 'Bot turlari', icon: Shapes },
     { to: '/ai', label: 'AI sozlamalari', icon: Brain },
     { to: '/settings', label: 'Bot sozlamalari', icon: Settings },
+    { to: '/direct-links', label: 'Direct linklar', icon: Link2 },
     { to: '/security', label: 'Xavfsizlik va loglar', icon: ShieldCheck },
   ] },
 ];
