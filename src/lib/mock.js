@@ -254,7 +254,8 @@ export async function mockRequest(path, method, body) {
       summary: { today: 1100000, month: 9800000, pending: 4, autoPay: true },
     };
     case 'panel/plans': return {
-      plans: [['pro', 'Pro', 50000, 10, 20, 20, 1, false, 214], ['premium', 'Premium', 120000, 20, 50, 40, 3, true, 61], ['max', 'Max', 250000, 35, 100, 70, 7, true, 18]].map(([kalit, nomi, narxi, chegirma, kb, rb, bk, ot, n], i) => ({ id: i + 1, kalit, nomi, narxi, muddat_kun: 30, chegirma, kunlik_bonus_foiz: kb, referal_bonus_foiz: rb, bot_bonus_kun: bk, otkazish: ot, chat_rasm: true, token_yangila: true, webapp_bepul: i > 0, users: n })),
+      plans: [['pro', 'Pro', 50000, 10, 20, 20, 1, false, 214], ['premium', 'Premium', 120000, 20, 50, 40, 3, true, 61], ['max', 'Max', 250000, 35, 100, 70, 7, true, 18]].map(([kalit, nomi, narxi, chegirma, , rb, bk, ot, n], i) => ({ id: i + 1, kalit, nomi, narxi, muddat_kun: 30, chegirma, chegirma_tariflar: i === 0 ? ['tarif_3', 'tarif_4'] : '*', referal_bonus_foiz: rb, bot_bonus_kun: bk, ai_limit: [250, 510, 1200][i], otkazish: ot, chat_rasm: true, token_yangila: true, users: n })),
+      botTariffs: [1, 2, 3, 4, 5].map((i) => ({ kalit: `tarif_${i}`, nomi: `Tarif ${i}` })),
       limits: [['oddiy', 2, 1000, 2000, 1, 0], ['pro', 5, 10000, 20000, 3, 2], ['premium', 15, 50000, 100000, 10, 5], ['max', 50, 0, 1000000, 30, 20]].map(([kalit, a, b, c, d, e]) => ({ kalit, max_bots: a, max_bot_users: b, monthly_messages: c, max_members: d, max_api_keys: e, allowed_templates: '*' })),
     };
     case 'panel/bot_plans': return { items: botPlanItems(), designs: DIDS.map((id) => ({ id, name: DNAMES[id] })), types: types.map(([value, label]) => ({ value, label })), webappGlobal: WA.global };
