@@ -99,6 +99,25 @@ const TMETA = tpl.map((t) => ({ slug: t.id, name: t.name, icon: t.icon, iconUrl:
   highlights: ['Tayyor admin panel', 'Web App', 'Avto to‘lov'], tags: ['Web App'], buttons: ['🛒 Katalog', '👤 Profil'],
   features: [{ icon: '⚡', title: 'Tez ishga tushadi', desc: '2 daqiqada' }, { icon: '💳', title: 'To‘lov', desc: 'Avto yoki qo‘lda' }] }));
 
+const BRB = {
+  settings: { enabled: true, dailyFree: 1, ticketPrice: 5000, maxBuy: 20 },
+  types: { balans: "Balans (so'm)", chipta: 'Chipta', sovga: "Sovg'a (qo'lda beriladi)", bosh: "Bo'sh (omad kelmadi)" },
+  prizes: [['50 Stars', '⭐', 'sovga', 50, 10, false, -1], ["5 000 so'm", '💰', 'balans', 5000, 30, false, -1], ['+1 chipta', '🎟', 'chipta', 1, 20, false, -1],
+    ['Muzqaymoq', '🍦', 'sovga', 0, 0.5, true, 3], ['Xmas paypoq', '🧦', 'sovga', 0, 0.5, true, 0], ['Omad kelmadi', '🙈', 'bosh', 0, 39, false, -1]]
+    .map(([nomi, emoji, turi, qiymat, vazn, nft, soni], i) => ({ id: i + 1, nomi, emoji, rasm: '', turi, qiymat, vazn, nft, soni, faol: true, tartib: i })),
+  stats: { today: 37, total: 1240, pending: 2, paid: 410000, sold: 96, tickets: 58 },
+  spins: [
+    { id: 3, user_id: '5600007919', ism: 'Dilnoza Karimova', nomi: '50 Stars', emoji: '⭐', rasm: '', turi: 'sovga', holat: 'kutilmoqda', created_at: '2026-11-12 16:40:02' },
+    { id: 2, user_id: '5600015838', ism: 'Sardor Aliyev', nomi: 'Muzqaymoq', emoji: '🍦', rasm: '', turi: 'sovga', holat: 'kutilmoqda', created_at: '2026-11-12 15:12:44' },
+    { id: 1, user_id: '5600000000', ism: 'Jasur Rahimov', nomi: "5 000 so'm", emoji: '💰', rasm: '', turi: 'balans', holat: 'berildi', created_at: '2026-11-12 14:01:10' },
+  ],
+};
+function brbView() {
+  const act = BRB.prizes.filter((p) => p.faol && p.soni !== 0 && p.vazn > 0);
+  const tot = act.reduce((a, p) => a + p.vazn, 0);
+  return { ...BRB, prizes: BRB.prizes.map((p) => ({ ...p, chance: act.includes(p) && tot ? Math.round((p.vazn / tot) * 10000) / 100 : 0 })) };
+}
+
 export async function mockRequest(path, method, body) {
   await wait();
   const [p, query = ''] = path.replace(/^\/+/, '').replace(/\.php/, '').split('?');
@@ -119,6 +138,16 @@ export async function mockRequest(path, method, body) {
       return { message: 'Saqlandi.' };
     }
     if (p === 'panel/session') return { admin: false };
+    if (p === 'panel/baraban') {
+      if (body.action === 'settings') BRB.settings = { enabled: !!body.enabled, dailyFree: body.dailyFree, ticketPrice: body.ticketPrice, maxBuy: body.maxBuy };
+      if (body.action === 'prize') {
+        const row = { ...body, rasm: body.image || body.rasm || '' }; delete row.action; delete row.image;
+        if (row.id) BRB.prizes = BRB.prizes.map((x) => (x.id === row.id ? { ...x, ...row } : x)); else BRB.prizes.push({ ...row, id: Date.now() });
+      }
+      if (body.action === 'prize_delete') BRB.prizes = BRB.prizes.filter((x) => x.id !== body.id);
+      if (body.action === 'spin_status') BRB.spins = BRB.spins.map((x) => (x.id === body.id ? { ...x, holat: body.holat } : x));
+      return { ...brbView(), message: 'Saqlandi (namunaviy rejim).' };
+    }
     if (p === 'panel/template_meta') {
       const t = TMETA.find((x) => x.slug === body.slug);
       if (t && body.action === 'save') Object.assign(t, body.data);
@@ -141,6 +170,7 @@ export async function mockRequest(path, method, body) {
   }
   switch (p) {
     case 'panel/moderation': return MOD;
+    case 'panel/baraban': return brbView();
     case 'panel/template_meta': return { templates: TMETA };
     case 'panel/session': return { admin: true, adminId: '7919670157', csrfToken: 'mock', botUsername: 'Makefybot' };
     case 'panel/dashboard': return {
