@@ -27,6 +27,7 @@ const Ai = lazy(() => import('./pages/Ai'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Security = lazy(() => import('./pages/Security'));
 const Moderation = lazy(() => import('./pages/Moderation'));
+const Baraban = lazy(() => import('./pages/Baraban'));
 const TemplateContent = lazy(() => import('./pages/TemplateContent'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="ai" element={<Ai />} />
           <Route path="settings" element={<Settings />} />
           <Route path="moderation" element={<Moderation />} />
+          <Route path="baraban" element={<Baraban />} />
           <Route path="security" element={<Security />} />
           <Route path="*" element={<NotFound />} />
         </Route>
