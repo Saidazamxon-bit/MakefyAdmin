@@ -14,23 +14,32 @@ import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Loading, PageHeader
 const lines = (a) => (Array.isArray(a) ? a.join('\n') : '');
 const toList = (s) => String(s || '').split('\n').map((x) => x.trim()).filter(Boolean);
 
-/** Rasmni brauzerda 256×256 (kvadrat, markazdan kesib) PNG ga keltiradi — server 600 KB / 1024 px chegarasidan oshmaydi. */
+/**
+ * Rasmni brauzerda 512×512 shaffof kvadratga JOYLAYDI (kesilmaydi, cho'zilmaydi — butun rasm ko'rinadi).
+ * Natija PNG; 600 KB dan oshsa WEBP. Server 600 KB / 1024 px chegarasidan oshmaydi.
+ */
 function fileToIcon(file) {
   return new Promise((resolve, reject) => {
     if (!/^image\/(png|jpe?g|webp|gif|svg\+xml)$/.test(file.type)) { reject(new Error('PNG, JPG, WEBP yoki SVG rasm tanlang.')); return; }
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const size = 256;
+      const size = 512;
+      const w = img.naturalWidth || size;
+      const h = img.naturalHeight || size;
+      const k = Math.min(size / w, size / h);
+      const dw = Math.round(w * k);
+      const dh = Math.round(h * k);
       const c = document.createElement('canvas');
       c.width = size; c.height = size;
       const ctx = c.getContext('2d');
-      const s = Math.min(img.naturalWidth || size, img.naturalHeight || size);
-      const sx = ((img.naturalWidth || size) - s) / 2;
-      const sy = ((img.naturalHeight || size) - s) / 2;
-      ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
       URL.revokeObjectURL(url);
-      resolve(c.toDataURL('image/png'));
+      let out = c.toDataURL('image/png');
+      if (out.length > 780000) out = c.toDataURL('image/webp', 0.9);
+      if (out.length > 780000) out = c.toDataURL('image/jpeg', 0.88);
+      resolve(out);
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Rasmni o'qib bo'lmadi.")); };
     img.src = url;
@@ -39,7 +48,7 @@ function fileToIcon(file) {
 
 function TileIcon({ t, size = 44 }) {
   return t.iconUrl
-    ? <img src={mediaUrl(t.iconUrl)} alt="" className="shrink-0 rounded-xl object-cover" style={{ width: size, height: size }} />
+    ? <img src={mediaUrl(t.iconUrl)} alt="" className="shrink-0 rounded-xl object-contain" style={{ width: size, height: size }} />
     : <span className="grid shrink-0 place-items-center rounded-xl bg-surface-2 text-2xl" style={{ width: size, height: size }}>{t.icon || '🤖'}</span>;
 }
 
@@ -77,7 +86,7 @@ function Editor({ t, onUpdated }) {
 
   return (
     <div className="space-y-4">
-      <Card title="Logotip ikonkasi" subtitle="Saytdagi katalog kartalari, bot sahifasi va «Botlarim» ro'yxatida ko'rinadi. Rasm avtomatik 256×256 kvadratga keltiriladi.">
+      <Card title="Logotip ikonkasi" subtitle="Saytdagi katalog kartalari, bot sahifasi va «Botlarim» ro'yxatida ko'rinadi. Rasm kesilmaydi — butunligicha kvadratga joylanadi. Xohlagan payt boshqasiga almashtirasiz; rasm yangilanishlarda o'chib ketmaydi.">
         <div className="flex flex-wrap items-center gap-4">
           <TileIcon t={t} size={88} />
           <div className="flex flex-wrap gap-2">
