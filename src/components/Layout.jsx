@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Bot, Brain, CreditCard, Crown, FileClock, Gauge, Layers, LogOut, Megaphone, Menu, MessageSquare, Moon,
-  PackageCheck, RefreshCw, Settings, Shapes, ShieldCheck, Sun, Ticket, Tv, Users, X, Zap,
+  PackageCheck, Palette, RefreshCw, Settings, Shapes, ShieldCheck, Sun, Ticket, Tv, Users, X, Zap,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useApi } from '../lib/hooks';
@@ -22,6 +22,7 @@ export const NAV = [
     { to: '/autopay', label: "Avto to'lov (botlar)", icon: Zap },
     { to: '/plans', label: 'Platforma tariflari', icon: Crown },
     { to: '/bot-plans', label: 'Bot tariflari', icon: Layers },
+    { to: '/webapp-designs', label: 'Web App dizaynlari', icon: Palette },
     { to: '/promocodes', label: 'Promokodlar', icon: Ticket },
     { to: '/channels', label: 'Pul ishlash kanallari', icon: Tv },
   ] },

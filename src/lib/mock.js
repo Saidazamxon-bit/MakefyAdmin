@@ -47,6 +47,39 @@ function msgsFor(uid) {
   return chatMsgs[uid];
 }
 
+// Web App dizaynlari (namunaviy holat)
+const DIDS = ['classic', 'minimal', 'bento', 'glass', 'futuristic', 'brutal'];
+const DNAMES = { classic: 'Standart', minimal: 'Minimalism', bento: 'Bento Grid', glass: 'Glassmorphism', futuristic: 'Dark Mode / Futuristic', brutal: 'Neo-Brutalism' };
+const WA = {
+  global: { disabled: [], colors: true, presets: ['#5b7cfa', '#7c6cf6', '#ec4899', '#ef4444', '#f97316', '#f2b53b', '#22c55e', '#14b8a6', '#0ea5e9', '#111827'] },
+  plans: {}, // id -> {designs, colors}
+  bots: Object.fromEntries(bots.map((b, i) => [b.username, { design: DIDS[i % 6], colors: i % 4 === 1 ? { accent: '#ef4444', accent2: '' } : null, force: i === 3 }])),
+};
+const botPlanItems = () => types.slice(0, 3).flatMap(([t, n], ti) => [['oddiy', 'Oddiy', 0, 500, 500, 'pullik', 5000, 1], ['standart', 'Standart', 6000, 1000, 3000, 'bor', 0, 2], ['pro', 'Pro', 30000, 5000, 20000, 'bor', 0, 3], ['max', 'Max', 120000, 0, 100000, 'bor', 0, 3]].map(([kalit, nomi, narx, mu, mm, w, wn, tz], i) => {
+  const id = ti * 10 + i;
+  const wa = WA.plans[id] || { designs: i === 0 ? ['classic', 'minimal'] : i === 1 ? ['classic', 'minimal', 'bento', 'glass'] : null, colors: i > 0 };
+  const features = { majburiy_obuna: true, max_kontent: [50, 300, 1000, 0][i], webapp_colors: wa.colors, ...(wa.designs ? { webapp_designs: wa.designs } : {}) };
+  return { id, botTuri: t, typeName: n, kalit, nomi, bosqich: i + 1, narx, muddatKun: 30, maxUsers: mu, monthlyMessages: mm, webapp: w, webappNarx: wn, tezlik: tz, features, faol: true, bots: [40, 22, 9, 3][i] };
+}));
+function waView(q) {
+  const plans = botPlanItems();
+  const applied = (b, s) => {
+    const p = plans.find((x) => x.botTuri === b.type && x.kalit === b.plan);
+    const allowed = !WA.global.disabled.includes(s.design) && (s.force || !p || !p.features.webapp_designs || p.features.webapp_designs.includes(s.design));
+    const colorsOk = WA.global.colors && (s.force || !p || p.features.webapp_colors !== false);
+    return { design: allowed ? s.design : 'classic', colors: colorsOk ? s.colors : null };
+  };
+  const list = bots.map((b) => ({ username: b.username, turi: b.type, typeName: b.typeName, ...WA.bots[b.username], tarif: b.plan, updated: 0 })).map((b) => ({ ...b, applied: applied(bots.find((x) => x.username === b.username), b) }));
+  const counts = {}; list.forEach((b) => { counts[b.design] = (counts[b.design] || 0) + 1; });
+  return {
+    global: WA.global,
+    designs: DIDS.map((id) => ({ id, name: DNAMES[id], bots: counts[id] || 0 })),
+    plans: plans.map((p) => ({ id: p.id, botTuri: p.botTuri, typeName: p.typeName, kalit: p.kalit, nomi: p.nomi, bosqich: p.bosqich, faol: p.faol, designs: p.features.webapp_designs || null, colors: p.features.webapp_colors !== false })),
+    bots: list.filter((b) => !q || b.username.includes(q)),
+    total: list.length,
+  };
+}
+
 export async function mockRequest(path, method, body) {
   await wait();
   const [p, query = ''] = path.replace(/^\/+/, '').replace(/\.php/, '').split('?');
@@ -54,6 +87,17 @@ export async function mockRequest(path, method, body) {
   const ok = (message) => ({ message: message || 'Saqlandi (namunaviy rejim).' });
   if (method !== 'GET') {
     if (p === 'auth/admin_token') return {};
+    if (p === 'panel/webapp_designs') {
+      if (body.action === 'global') { WA.global = { disabled: body.disabled, colors: body.colors, presets: body.presets }; return { message: 'Saqlandi.', global: WA.global }; }
+      if (body.action === 'plan') { WA.plans[body.id] = { designs: body.designs, colors: body.colors }; return { message: 'Tarif yangilandi.' }; }
+      if (body.action === 'bot') { WA.bots[body.bot] = { design: body.design, colors: body.colors, force: body.force }; return { message: 'Bot dizayni saqlandi.' }; }
+    }
+    if (p === 'panel/bot_plans' && body.action === 'create') return { message: "Yangi tarif qo'shildi (namunaviy rejim)." };
+    if (p === 'panel/bot_plans' && body.action === 'delete') return { message: "Tarif o'chirildi (namunaviy rejim)." };
+    if (p === 'panel/bot_plans' && body.id !== undefined) {
+      WA.plans[body.id] = { designs: body.features?.webapp_designs || null, colors: body.features?.webapp_colors !== false };
+      return { message: 'Saqlandi.' };
+    }
     if (p === 'panel/session') return { admin: false };
     if (p === 'panel/chat') { const m = { id: Date.now(), kim: 'admin', matn: body.text, sana_label: 'hozir', oqildi: 0 }; msgsFor(body.uid).push(m); return { message: m }; }
     if (p === 'panel/templates') return { message: 'Yangilanish tarqatildi.', summary: { bots: 17, synced: 4, changed: 3, errors: 0 }, failed: [] };
@@ -141,7 +185,8 @@ export async function mockRequest(path, method, body) {
       plans: [['pro', 'Pro', 50000, 10, 20, 20, 1, false, 214], ['premium', 'Premium', 120000, 20, 50, 40, 3, true, 61], ['max', 'Max', 250000, 35, 100, 70, 7, true, 18]].map(([kalit, nomi, narxi, chegirma, kb, rb, bk, ot, n], i) => ({ id: i + 1, kalit, nomi, narxi, muddat_kun: 30, chegirma, kunlik_bonus_foiz: kb, referal_bonus_foiz: rb, bot_bonus_kun: bk, otkazish: ot, chat_rasm: true, token_yangila: true, webapp_bepul: i > 0, users: n })),
       limits: [['oddiy', 2, 1000, 2000, 1, 0], ['pro', 5, 10000, 20000, 3, 2], ['premium', 15, 50000, 100000, 10, 5], ['max', 50, 0, 1000000, 30, 20]].map(([kalit, a, b, c, d, e]) => ({ kalit, max_bots: a, max_bot_users: b, monthly_messages: c, max_members: d, max_api_keys: e, allowed_templates: '*' })),
     };
-    case 'panel/bot_plans': return { items: types.slice(0, 3).flatMap(([t, n], ti) => [['oddiy', 'Oddiy', 0, 500, 500, 'pullik', 5000, 1], ['standart', 'Standart', 6000, 1000, 3000, 'bor', 0, 2], ['pro', 'Pro', 30000, 5000, 20000, 'bor', 0, 3], ['max', 'Max', 120000, 0, 100000, 'bor', 0, 3]].map(([kalit, nomi, narx, mu, mm, w, wn, tz], i) => ({ id: ti * 10 + i, botTuri: t, typeName: n, kalit, nomi, bosqich: i + 1, narx, muddatKun: 30, maxUsers: mu, monthlyMessages: mm, webapp: w, webappNarx: wn, tezlik: tz, features: { majburiy_obuna: true, max_kontent: [50, 300, 1000, 0][i] }, faol: true, bots: [40, 22, 9, 3][i] }))) };
+    case 'panel/bot_plans': return { items: botPlanItems(), designs: DIDS.map((id) => ({ id, name: DNAMES[id] })), types: types.map(([value, label]) => ({ value, label })), webappGlobal: WA.global };
+    case 'panel/webapp_designs': return waView(q.q || '');
     case 'panel/promocodes': return { items: [{ id: 3, kod: 'NOYABR26', soni: 500, ishlatilgan: 312, mukofot: { oddiy: 2000, pro: 3000, premium: 5000, max: 8000 }, shaxsiy: '', faol: true, sana: '01.11.2026 10:00' }, { id: 2, kod: 'VIPJASUR', soni: 1, ishlatilgan: 0, mukofot: { oddiy: 50000, pro: 50000, premium: 50000, max: 50000 }, shaxsiy: users[0].userId, faol: true, sana: '28.10.2026 15:31' }, { id: 1, kod: 'START', soni: 100, ishlatilgan: 100, mukofot: { oddiy: 1000, pro: 1000, premium: 1000, max: 1000 }, shaxsiy: '', faol: false, sana: '01.09.2026 09:00' }] };
     case 'panel/channels': return { items: [{ id: 2, nomi: 'Makefy yangiliklari', username: '@makefy_news', mukofot: 500, sana: '01.11.2026', done: 1288 }, { id: 1, nomi: 'Hamkor kanal', username: '@hamkor_uz', mukofot: 300, sana: '20.10.2026', done: 406 }] };
     case 'panel/templates': return { templates: tpl, autoSync: true, lastAutoSync: '2026-11-09 23:40:00' };

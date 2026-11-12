@@ -18,6 +18,7 @@ const Payments = lazy(() => import('./pages/Payments'));
 const Autopay = lazy(() => import('./pages/Autopay'));
 const Plans = lazy(() => import('./pages/Plans'));
 const BotPlans = lazy(() => import('./pages/BotPlans'));
+const WebappDesigns = lazy(() => import('./pages/WebappDesigns'));
 const Promocodes = lazy(() => import('./pages/Promocodes'));
 const Channels = lazy(() => import('./pages/Channels'));
 const Templates = lazy(() => import('./pages/Templates'));
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="autopay" element={<Autopay />} />
           <Route path="plans" element={<Plans />} />
           <Route path="bot-plans" element={<BotPlans />} />
+          <Route path="webapp-designs" element={<WebappDesigns />} />
           <Route path="promocodes" element={<Promocodes />} />
           <Route path="channels" element={<Channels />} />
           <Route path="templates" element={<Templates />} />
