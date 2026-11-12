@@ -80,6 +80,19 @@ function waView(q) {
   };
 }
 
+const MOD = {
+  enabled: true,
+  categories: { narko: 'Giyohvand moddalar', qimor: 'Qimor va kazino', adult: '18+ / fohishabozlik', firib: 'Firibgarlik va soxta hujjat', qurol: 'Qurol savdosi', ekstrem: 'Terror va ekstremizm', haqorat: "So'kinish va haqorat", boshqa: 'Boshqa' },
+  defaults: [['narkotik', 'narko'], ['kokain', 'narko'], ['kazino', 'qimor'], ['1xbet', 'qimor'], ['porno', 'adult'], ['soxta pasport', 'firib'], ['qurol sotiladi', 'qurol'], ['terakt', 'ekstrem'], ['suka', 'haqorat']].map(([word, cat]) => ({ word, cat, disabled: false })),
+  custom: [{ word: 'stavka bonus', cat: 'qimor', by: '7919670157', at: '2026-11-11 18:20:00' }],
+  stats: { blocked7: 6, saved7: 142 },
+  log: [
+    { at: '2026-11-12 09:41:10', src: 'site', bot: 'starska_shop1bot', action: 'text', status: 'blocked', word: 'kazino', cat: 'qimor', text: 'Eng zo‘r kazino bonuslari shu yerda!' },
+    { at: '2026-11-12 09:30:02', src: 'site', bot: 'anime_kino2bot', action: 'button', status: 'saved', text: '🎬 Yangi animelar' },
+    { at: '2026-11-12 08:12:47', src: 'bot', bot: 'dokon_uz3bot', action: 'text', status: 'saved', text: 'Buyurtmangiz qabul qilindi! Raqami: {1}' },
+  ],
+};
+
 export async function mockRequest(path, method, body) {
   await wait();
   const [p, query = ''] = path.replace(/^\/+/, '').replace(/\.php/, '').split('?');
@@ -99,12 +112,21 @@ export async function mockRequest(path, method, body) {
       return { message: 'Saqlandi.' };
     }
     if (p === 'panel/session') return { admin: false };
+    if (p === 'panel/moderation') {
+      if (body.action === 'test') return { hit: /kazino|narko/i.test(body.text || '') ? { word: 'kazino', cat: 'qimor', catName: 'Qimor va kazino' } : null };
+      if (body.action === 'add') MOD.custom.unshift({ word: body.word, cat: body.cat, by: '7919670157', at: '2026-11-12 10:00:00' });
+      if (body.action === 'remove') MOD.custom = MOD.custom.filter((x) => x.word !== body.word);
+      if (body.action === 'default') MOD.defaults = MOD.defaults.map((x) => (x.word === body.word ? { ...x, disabled: !!body.disabled } : x));
+      if (body.action === 'enabled') MOD.enabled = !!body.enabled;
+      return { ...MOD, message: 'Saqlandi (namunaviy rejim).' };
+    }
     if (p === 'panel/chat') { const m = { id: Date.now(), kim: 'admin', matn: body.text, sana_label: 'hozir', oqildi: 0 }; msgsFor(body.uid).push(m); return { message: m }; }
     if (p === 'panel/templates') return { message: 'Yangilanish tarqatildi.', summary: { bots: 17, synced: 4, changed: 3, errors: 0 }, failed: [] };
     if (p === 'panel/ai') return { message: 'Saqlandi.', providers: AI.providers };
     return ok(body?.action === 'balance' ? 'Balans yangilandi.' : undefined);
   }
   switch (p) {
+    case 'panel/moderation': return MOD;
     case 'panel/session': return { admin: true, adminId: '7919670157', csrfToken: 'mock', botUsername: 'Makefybot' };
     case 'panel/dashboard': return {
       stats: { users: 2431, usersToday: 186, banned: 12, balance: 18450000, bots: 642, botsActive: 518, botsPaused: 31, requestsPending: 3, requestsPaid: 1, chatUnread: 5, paymentsToday: 1100000, payments30: 14600000, paymentsPending: 4, jobsPending: 0 },

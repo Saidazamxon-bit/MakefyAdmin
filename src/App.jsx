@@ -26,6 +26,7 @@ const Categories = lazy(() => import('./pages/Categories'));
 const Ai = lazy(() => import('./pages/Ai'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Security = lazy(() => import('./pages/Security'));
+const Moderation = lazy(() => import('./pages/Moderation'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function Protected({ children }) {
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="categories" element={<Categories />} />
           <Route path="ai" element={<Ai />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="moderation" element={<Moderation />} />
           <Route path="security" element={<Security />} />
           <Route path="*" element={<NotFound />} />
         </Route>

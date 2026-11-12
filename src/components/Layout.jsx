@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Bot, Brain, CreditCard, Crown, FileClock, Gauge, Layers, LogOut, Megaphone, Menu, MessageSquare, Moon,
-  PackageCheck, Palette, RefreshCw, Settings, Shapes, ShieldCheck, Sun, Ticket, Tv, Users, X, Zap,
+  PackageCheck, Palette, RefreshCw, Settings, Shapes, ShieldAlert, ShieldCheck, Sun, Ticket, Tv, Users, X, Zap,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useApi } from '../lib/hooks';
@@ -16,6 +16,7 @@ export const NAV = [
     { to: '/requests', label: "So'rovlar va buyurtmalar", icon: PackageCheck, badge: 'requestsPending' },
     { to: '/chat', label: 'Chat', icon: MessageSquare, badge: 'chatUnread' },
     { to: '/broadcast', label: 'Xabar yuborish', icon: Megaphone },
+    { to: '/moderation', label: 'Moderatsiya', icon: ShieldAlert },
   ] },
   { group: 'Moliya', items: [
     { to: '/payments', label: "To'lovlar va kartalar", icon: CreditCard },
