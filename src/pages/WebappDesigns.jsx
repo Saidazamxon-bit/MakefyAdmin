@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check, Palette, Plus, RotateCcw, X } from 'lucide-react';
+import { Check, Lock, Palette, Plus, RotateCcw, X } from 'lucide-react';
 import { api, qs } from '../lib/api';
 import { useApi, useDebounced } from '../lib/hooks';
 import { num } from '../lib/format';
@@ -11,7 +11,8 @@ import { Badge, Button, Card, Empty, ErrorBox, Loading, PageHeader, SearchInput,
  * Shablon botlar Web App dizaynlari (backend: api/panel/webapp_designs.php, includes/webapp_theme.php).
  *  1) Platforma: dizaynni butunlay yoqish/o'chirish, ranglarni o'zgartirish ruxsati, tayyor ranglar
  *  2) Tariflar: har bir tarifda qaysi dizaynlar va ranglar ochiq (bot_tariflar.features)
- *  3) Botlar: istalgan botning dizayni/rangi (ixtiyoriy: tarifdan qat'i nazar)
+ *  3) Botlar: istalgan botning dizayni/rangi (ixtiyoriy: tarifdan qat'i nazar), «O'chirish» — shu botda Web App dizayni yopiladi
+ *  4) Shablon turlari: butun shablon turidagi botlarda Web App dizaynini o'chirish (lockedTypes)
  */
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -144,14 +145,19 @@ function BotEditor({ b, onSaved }) {
   const [design, setDesign] = useState(b.design);
   const [color, setColor] = useState(b.colors?.accent || '');
   const [force, setForce] = useState(!!b.force);
+  const [locked, setLocked] = useState(!!b.locked);
   const { busy, run } = useAction();
-  const dirty = design !== b.design || color !== (b.colors?.accent || '') || force !== !!b.force;
+  const dirty = design !== b.design || color !== (b.colors?.accent || '') || force !== !!b.force || locked !== !!b.locked;
   const save = async () => {
     const colors = HEX.test(color) ? { accent: color, accent2: b.colors?.accent2 || '' } : null;
-    if (await run('b', () => api.post('panel/webapp_designs', { action: 'bot', bot: b.username, design, colors, force }))) onSaved();
+    if (await run('b', () => api.post('panel/webapp_designs', { action: 'bot', bot: b.username, design, colors, force, locked }))) onSaved();
   };
   return (
     <div className="flex items-center justify-end gap-2">
+      <label className={cx('flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1 text-xs', locked ? 'border-bad/40 bg-bad-soft text-bad' : 'border-line text-muted')}
+        title="Web App dizaynini o'chirish: faqat Standart ko'rinish, egasi dizayn va rangni o'zgartira olmaydi">
+        <input type="checkbox" checked={locked} onChange={(e) => setLocked(e.target.checked)} className="size-3.5 accent-[var(--color-bad)]" /><Lock className="size-3" />O'chirish
+      </label>
       <div className="w-44 shrink-0">
         <Select value={design} onChange={(e) => setDesign(e.target.value)} className="h-8 text-[13px]" aria-label={`@${b.username} dizayni`}>
           {DESIGNS.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -193,7 +199,8 @@ function BotsCard({ disabledIds, onSaved }) {
                   <Badge tone={b.applied.design === b.design ? 'brand' : 'warn'}>{designName(b.applied.design)}</Badge>
                   {b.applied.colors && <Swatches colors={[b.applied.colors.accent, b.applied.colors.accent2].filter(Boolean)} />}
                   {b.force && <Badge tone="info">majburiy</Badge>}
-                  {b.applied.design !== b.design && (
+                  {b.applied.locked && <Badge tone="bad">dizayn o‘chirilgan</Badge>}
+                  {!b.applied.locked && b.applied.design !== b.design && (
                     <span className="text-xs text-warn" title={`Tanlangan: ${designName(b.design)}`}>
                       {designName(b.design)}: {disabledIds.includes(b.design) ? 'platformada o‘chiq' : 'tarifda yopiq'}
                     </span>
@@ -201,11 +208,28 @@ function BotsCard({ disabledIds, onSaved }) {
                 </div>
               ),
             },
-            { key: 'edit', title: '', align: 'right', render: (b) => <BotEditor key={`${b.design}|${b.colors?.accent || ''}|${b.force ? 1 : 0}`} b={b} onSaved={done} /> },
+            { key: 'edit', title: '', align: 'right', render: (b) => <BotEditor key={`${b.design}|${b.colors?.accent || ''}|${b.force ? 1 : 0}|${b.locked ? 1 : 0}`} b={b} onSaved={done} /> },
           ]}
         />
       )}
       {data && data.total > rows.length && <p className="mt-3 text-xs text-muted">{num(rows.length)} / {num(data.total)} ta ko'rsatildi — qidiruvdan foydalaning.</p>}
+    </Card>
+  );
+}
+
+function TypesCard({ data, onSaved }) {
+  const { busy, run } = useAction();
+  const locked = data.global.lockedTypes || [];
+  const types = data.types || [];
+  const toggle = async (id, v) => { if (await run(id, () => api.post('panel/webapp_designs', { action: 'lock_type', turi: id, locked: v }))) onSaved(); };
+  return (
+    <Card title="Shablon turlari bo'yicha" subtitle="O'chirilgan shablon turidagi BARCHA botlarda Web App faqat Standart ko'rinishda ishlaydi, egalari dizayn va rangni o'zgartira olmaydi. Bitta bot uchun — «Botlar» bo'limida «O'chirish».">
+      <Table rowKey="id" rows={types} empty={<Empty title="Shablon botlar yo'q" />} columns={[
+        { key: 'name', title: 'Shablon', render: (t) => <div><p className="font-medium">{t.name}</p><p className="text-xs text-muted">{t.id}</p></div> },
+        { key: 'bots', title: 'Botlar', render: (t) => <span className="tabular">{num(t.bots)}</span> },
+        { key: 'st', title: 'Holat', render: (t) => (locked.includes(t.id) ? <Badge tone="bad">Dizayn o‘chirilgan</Badge> : <Badge tone="ok">Yoqilgan</Badge>) },
+        { key: 'sw', title: 'Web App dizayni', align: 'right', render: (t) => <Switch checked={!locked.includes(t.id)} disabled={busy === t.id} onChange={(v) => toggle(t.id, !v)} /> },
+      ]} />
     </Card>
   );
 }
@@ -226,10 +250,12 @@ export default function WebappDesigns() {
         { value: 'global', label: 'Platforma' },
         { value: 'plans', label: 'Tariflar', count: data.plans.length },
         { value: 'bots', label: 'Botlar', count: data.total },
+        { value: 'types', label: 'Shablon turlari', count: (data.global.lockedTypes || []).length },
       ]} />
       {tab === 'global' && <GlobalCard key={JSON.stringify(data.global)} data={data} onSaved={refresh} />}
       {tab === 'plans' && <PlansCard data={data} onSaved={refresh} />}
       {tab === 'bots' && <BotsCard disabledIds={data.global.disabled} onSaved={refresh} />}
+      {tab === 'types' && <TypesCard data={data} onSaved={refresh} />}
     </div>
   );
 }

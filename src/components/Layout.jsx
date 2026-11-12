@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
-  Bot, Brain, CreditCard, Crown, FileClock, Gauge, Layers, LogOut, Megaphone, Menu, MessageSquare, Moon,
+  Bot, Brain, CreditCard, LayoutGrid, Crown, FileClock, Gauge, Layers, LogOut, Megaphone, Menu, MessageSquare, Moon,
   PackageCheck, Palette, RefreshCw, Settings, Shapes, ShieldAlert, ShieldCheck, Sun, Ticket, Tv, Users, X, Zap,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
@@ -29,6 +29,7 @@ export const NAV = [
   ] },
   { group: 'Tizim', items: [
     { to: '/templates', label: 'Shablonlar', icon: RefreshCw, badge: 'templatesOutdated' },
+    { to: '/template-content', label: 'Shablon katalogi', icon: LayoutGrid },
     { to: '/categories', label: 'Bot turlari', icon: Shapes },
     { to: '/ai', label: 'AI sozlamalari', icon: Brain },
     { to: '/settings', label: 'Bot sozlamalari', icon: Settings },
