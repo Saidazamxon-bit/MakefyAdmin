@@ -28,6 +28,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Security = lazy(() => import('./pages/Security'));
 const Moderation = lazy(() => import('./pages/Moderation'));
 const Baraban = lazy(() => import('./pages/Baraban'));
+const Chegirma = lazy(() => import('./pages/Chegirma'));
 const TemplateContent = lazy(() => import('./pages/TemplateContent'));
 const DirectLinks = lazy(() => import('./pages/DirectLinks'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="moderation" element={<Moderation />} />
           <Route path="baraban" element={<Baraban />} />
+          <Route path="chegirma" element={<Chegirma />} />
           <Route path="security" element={<Security />} />
           <Route path="*" element={<NotFound />} />
         </Route>

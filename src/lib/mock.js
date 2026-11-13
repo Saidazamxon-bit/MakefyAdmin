@@ -100,7 +100,7 @@ const TMETA = tpl.map((t) => ({ slug: t.id, name: t.name, icon: t.icon, iconUrl:
   features: [{ icon: '⚡', title: 'Tez ishga tushadi', desc: '2 daqiqada' }, { icon: '💳', title: 'To‘lov', desc: 'Avto yoki qo‘lda' }] }));
 
 const BRB = {
-  settings: { enabled: true, dailyFree: 1, ticketPrice: 5000, maxBuy: 20 },
+  settings: { enabled: true, dailyFree: 1, ticketPrice: 20000, maxBuy: 20, couponDays: 30 },
   types: { balans: "Balans (so'm)", chipta: "Qo'shimcha aylantirish", tarif: 'Akkaunt tarifi (kun)', bot_kun: 'Mavjud botga +kun', chegirma: 'Chegirma kuponi (%)', sovga: "Sovg'a (qo'lda beriladi)", bosh: "Bo'sh (omad kelmadi)" },
   scopes: { tarif: 'Akkaunt tarifiga', bot: "Bot to'loviga (bot yaratish / keyingi bot)", shablon: "Bot shabloniga (oylik to'lov)" },
   plans: [{ kalit: 'pro', nomi: 'Pro', narxi: 50000, muddat_kun: 30 }, { kalit: 'premium', nomi: 'Premium', narxi: 120000, muddat_kun: 30 }],
@@ -120,6 +120,29 @@ function brbView() {
   const act = BRB.prizes.filter((p) => p.faol && p.soni !== 0 && p.vazn > 0);
   const tot = act.reduce((a, p) => a + p.vazn, 0);
   return { ...BRB, prizes: BRB.prizes.map((p) => ({ ...p, chance: act.includes(p) && tot ? Math.round((p.vazn / tot) * 10000) / 100 : 0 })) };
+}
+
+// Chegirma kuponlari (namunaviy)
+const dt = (ms) => new Date(Date.now() + ms).toISOString().slice(0, 19).replace('T', ' ');
+const CPN = [
+  { id: 5, user_id: '7919670157', ism: 'Saidazamxon', scope: 'tarif', foiz: 70, nomi: '70% chegirma', expires_at: dt(29.7 * 864e5), used_at: null, used_for: '', manba: 'baraban', spin_id: 41 },
+  { id: 4, user_id: '7919670157', ism: 'Saidazamxon', scope: 'shablon', foiz: 20, nomi: 'Bot shabloniga 20% chegirma', expires_at: dt(0.4 * 864e5), used_at: null, used_for: '', manba: 'baraban', spin_id: 40 },
+  { id: 3, user_id: '5512039911', ism: 'Jasur', scope: 'bot', foiz: 50, nomi: 'Yangi yil aksiyasi', expires_at: dt(6 * 864e5), used_at: null, used_for: '', manba: 'admin', spin_id: 0 },
+  { id: 2, user_id: '6620011223', ism: 'Madina', scope: 'tarif', foiz: 10, nomi: '10% chegirma', expires_at: dt(12 * 864e5), used_at: dt(-2 * 864e5), used_for: 'Pro tarifi', manba: 'baraban', spin_id: 22 },
+  { id: 1, user_id: '6620011223', ism: 'Madina', scope: 'tarif', foiz: 15, nomi: '15% chegirma', expires_at: dt(-3 * 864e5), used_at: null, used_for: '', manba: 'baraban', spin_id: 12 },
+];
+function cpnView(holat) {
+  const now = Date.now();
+  const rows = CPN.map((c) => {
+    const left = c.used_at ? 0 : Math.max(0, Math.floor((new Date(c.expires_at.replace(' ', 'T')).getTime() - now) / 1000));
+    return { ...c, secondsLeft: left, holat: c.used_at ? 'ishlatilgan' : left > 0 ? 'faol' : 'tugagan' };
+  });
+  const cnt = (h) => rows.filter((r) => r.holat === h).length;
+  return {
+    coupons: holat ? rows.filter((r) => r.holat === holat) : rows,
+    stats: { total: rows.length, faol: cnt('faol'), used: cnt('ishlatilgan'), expired: cnt('tugagan'), admin: rows.filter((r) => r.manba === 'admin').length },
+    scopes: BRB.scopes, settings: BRB.settings,
+  };
 }
 
 export async function mockRequest(path, method, body) {
@@ -143,7 +166,7 @@ export async function mockRequest(path, method, body) {
     }
     if (p === 'panel/session') return { admin: false };
     if (p === 'panel/baraban') {
-      if (body.action === 'settings') BRB.settings = { enabled: !!body.enabled, dailyFree: body.dailyFree, ticketPrice: body.ticketPrice, maxBuy: body.maxBuy };
+      if (body.action === 'settings') BRB.settings = { enabled: !!body.enabled, dailyFree: body.dailyFree, ticketPrice: body.ticketPrice, maxBuy: body.maxBuy, couponDays: body.couponDays ?? BRB.settings.couponDays };
       if (body.action === 'prize') {
         const row = { ...body, rasm: body.image || body.rasm || '' }; delete row.action; delete row.image;
         if (row.id) BRB.prizes = BRB.prizes.map((x) => (x.id === row.id ? { ...x, ...row } : x)); else BRB.prizes.push({ ...row, id: Date.now() });
@@ -152,6 +175,16 @@ export async function mockRequest(path, method, body) {
       if (body.action === 'spin_status') BRB.spins = BRB.spins.map((x) => (x.id === body.id ? { ...x, holat: body.holat, izoh: body.izoh ? `@${String(body.izoh).replace(/^@/, '')}` : x.izoh } : x));
       if (body.action === 'seed') return { ...brbView(), message: "0 ta boshlang'ich sovg'a qo'shildi (namunaviy rejim)." };
       return { ...brbView(), message: 'Saqlandi (namunaviy rejim).' };
+    }
+    if (p === 'panel/chegirma') {
+      if (body.action === 'create') {
+        const exp = new Date(Date.now() + Number(body.days) * 86400000).toISOString().slice(0, 19).replace('T', ' ');
+        CPN.unshift({ id: Date.now(), user_id: body.target === 'all' ? '7919670157' : body.target, ism: 'Namuna', scope: body.scope, foiz: Number(body.foiz), nomi: body.nomi || `${body.foiz}% chegirma`, expires_at: exp, used_at: null, used_for: '', manba: 'admin', spin_id: 0 });
+      }
+      if (body.action === 'extend') CPN.forEach((c) => { if (c.id === body.id) c.expires_at = new Date(Math.max(Date.now(), new Date(c.expires_at.replace(' ', 'T')).getTime()) + body.days * 86400000).toISOString().slice(0, 19).replace('T', ' '); });
+      if (body.action === 'cancel') CPN.forEach((c) => { if (c.id === body.id) c.expires_at = new Date().toISOString().slice(0, 19).replace('T', ' '); });
+      if (body.action === 'settings') BRB.settings.couponDays = Number(body.couponDays);
+      return { ...cpnView(''), message: 'Saqlandi (namunaviy rejim).' };
     }
     if (p === 'panel/template_meta') {
       const t = TMETA.find((x) => x.slug === body.slug);
@@ -176,6 +209,7 @@ export async function mockRequest(path, method, body) {
   switch (p) {
     case 'panel/moderation': return MOD;
     case 'panel/baraban': return brbView();
+    case 'panel/chegirma': return cpnView(q.holat || '');
     case 'panel/template_meta': return { templates: TMETA };
     case 'panel/session': return { admin: true, adminId: '7919670157', csrfToken: 'mock', botUsername: 'Makefybot' };
     case 'panel/dashboard': return {
