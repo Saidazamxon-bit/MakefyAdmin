@@ -131,6 +131,19 @@ const CPN = [
   { id: 2, user_id: '6620011223', ism: 'Madina', scope: 'tarif', foiz: 10, nomi: '10% chegirma', expires_at: dt(12 * 864e5), used_at: dt(-2 * 864e5), used_for: 'Pro tarifi', manba: 'baraban', spin_id: 22 },
   { id: 1, user_id: '6620011223', ism: 'Madina', scope: 'tarif', foiz: 15, nomi: '15% chegirma', expires_at: dt(-3 * 864e5), used_at: null, used_for: '', manba: 'baraban', spin_id: 12 },
 ];
+const SALES = [
+  { id: 2, turi: 'tarif', kalit: 'pro', nomi: 'Bahor aksiyasi', narx: 35000, boshlanish: dt(-864e5), tugash: dt(2.4 * 864e5), faol: true },
+  { id: 1, turi: 'chipta', kalit: '', nomi: '', narx: 15000, boshlanish: dt(-3 * 864e5), tugash: dt(-864e5), faol: true },
+];
+const SALE_PLANS = [{ kalit: 'pro', nomi: 'Pro', narxi: 50000, muddat_kun: 30 }, { kalit: 'premium', nomi: 'Premium', narxi: 90000, muddat_kun: 30 }];
+function salesView() {
+  const now = Date.now();
+  return SALES.map((x) => {
+    const st = new Date(x.boshlanish.replace(' ', 'T')).getTime(); const en = new Date(x.tugash.replace(' ', 'T')).getTime();
+    const holat = !x.faol ? 'toxtatilgan' : en <= now ? 'tugagan' : st > now ? 'kutilmoqda' : 'faol';
+    return { ...x, holat, secondsLeft: holat === 'faol' ? Math.floor((en - now) / 1000) : holat === 'kutilmoqda' ? Math.floor((st - now) / 1000) : 0 };
+  });
+}
 function cpnView(holat) {
   const now = Date.now();
   const rows = CPN.map((c) => {
@@ -141,7 +154,7 @@ function cpnView(holat) {
   return {
     coupons: holat ? rows.filter((r) => r.holat === holat) : rows,
     stats: { total: rows.length, faol: cnt('faol'), used: cnt('ishlatilgan'), expired: cnt('tugagan'), admin: rows.filter((r) => r.manba === 'admin').length },
-    scopes: BRB.scopes, settings: BRB.settings,
+    scopes: BRB.scopes, settings: BRB.settings, sales: salesView(), salePlans: SALE_PLANS, ticketPrice: BRB.settings.ticketPrice,
   };
 }
 
@@ -184,6 +197,10 @@ export async function mockRequest(path, method, body) {
       if (body.action === 'extend') CPN.forEach((c) => { if (c.id === body.id) c.expires_at = new Date(Math.max(Date.now(), new Date(c.expires_at.replace(' ', 'T')).getTime()) + body.days * 86400000).toISOString().slice(0, 19).replace('T', ' '); });
       if (body.action === 'cancel') CPN.forEach((c) => { if (c.id === body.id) c.expires_at = new Date().toISOString().slice(0, 19).replace('T', ' '); });
       if (body.action === 'settings') BRB.settings.couponDays = Number(body.couponDays);
+      if (body.action === 'sale_create') SALES.unshift({ id: Date.now(), turi: body.turi, kalit: body.kalit, nomi: body.nomi, narx: body.narx, boshlanish: body.start || dt(0), tugash: body.end, faol: true });
+      if (body.action === 'sale_extend') SALES.forEach((x) => { if (x.id === body.id) { x.tugash = body.end; x.faol = true; } });
+      if (body.action === 'sale_stop') SALES.forEach((x) => { if (x.id === body.id) x.faol = false; });
+      if (body.action === 'sale_delete') SALES.splice(SALES.findIndex((x) => x.id === body.id), 1);
       return { ...cpnView(''), message: 'Saqlandi (namunaviy rejim).' };
     }
     if (p === 'panel/template_meta') {
