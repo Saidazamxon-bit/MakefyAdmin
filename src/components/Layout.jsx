@@ -20,8 +20,8 @@ export const NAV = [
   { group: 'Moliya', items: [
     { to: '/payments', label: "To'lovlar va kartalar", icon: CreditCard },
     { to: '/autopay', label: "Avto to'lov (botlar)", icon: Zap },
-    { to: '/plans', label: 'Platforma tariflari', icon: Crown },
-    { to: '/bot-plans', label: 'Bot tariflari', icon: Layers },
+    { to: '/billing', label: 'Bot tariflari', icon: Layers },
+    { to: '/plans', label: 'Akkaunt tariflari (eski)', icon: Crown },
     { to: '/webapp-designs', label: 'Web App dizaynlari', icon: Palette },
     { to: '/promocodes', label: 'Promokodlar', icon: Ticket },
     { to: '/baraban', label: 'Baraban', icon: Gift },
