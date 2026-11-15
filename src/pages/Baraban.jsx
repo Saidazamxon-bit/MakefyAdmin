@@ -125,7 +125,7 @@ function SettingsCard({ s, onSaved }) {
   const [f, setF] = useState(s);
   const { busy, run } = useAction();
   const dirty = JSON.stringify(f) !== JSON.stringify(s);
-  const save = async () => { const r = await run('st', () => api.post('panel/baraban', { action: 'settings', ...f, dailyFree: Number(f.dailyFree), ticketPrice: Number(f.ticketPrice), maxBuy: Number(f.maxBuy) })); if (r) onSaved(r); };
+  const save = async () => { const r = await run('st', () => api.post('panel/baraban', { action: 'settings', ...f, dailyFree: Number(f.dailyFree), ticketPrice: Number(f.ticketPrice), maxBuy: Number(f.maxBuy), bigFrom: Number(f.bigFrom ?? 50), bigChance: Number(f.bigChance ?? 1) })); if (r) onSaved(r); };
   return (
     <Card title="Sozlamalar" actions={<Button variant={dirty ? 'primary' : 'secondary'} disabled={!dirty} loading={busy === 'st'} onClick={save}>Saqlash</Button>}>
       <div className="grid gap-4 sm:grid-cols-4 sm:items-end">
@@ -134,6 +134,39 @@ function SettingsCard({ s, onSaved }) {
         <Field label="Chipta narxi (so'm)" hint="0 = sotilmaydi"><Input type="number" min="0" value={f.ticketPrice} onChange={(e) => setF((x) => ({ ...x, ticketPrice: e.target.value }))} /></Field>
         <Field label="Bir martada maks." hint="Sotib olish"><Input type="number" min="1" max="100" value={f.maxBuy} onChange={(e) => setF((x) => ({ ...x, maxBuy: e.target.value }))} /></Field>
       </div>
+      <div className="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-[1fr_1fr_2fr] sm:items-end">
+        <Field label="Katta kupon: chegirma dan yuqori (%)" hint="Standart 50 — 70%, 90%, bepul shablon kabi"><Input type="number" min="0" max="99" value={f.bigFrom ?? 50} onChange={(e) => setF((x) => ({ ...x, bigFrom: e.target.value }))} /></Field>
+        <Field label="Ularning jami ehtimoli (%)" hint="1 = 100 ta aylantirishdan ~1 tasi"><Input type="number" min="0" max="100" step="0.1" value={f.bigChance ?? 1} onChange={(e) => setF((x) => ({ ...x, bigChance: e.target.value }))} /></Field>
+        <p className="pb-2 text-xs text-muted">Og'irliklar qanday qo'yilmasin, {f.bigFrom ?? 50}% dan katta chegirma kuponlari birgalikda {f.bigChance ?? 1}% dan ko'p tushmaydi (ular orasidagi nisbat saqlanadi). Foydalanuvchiga ham shu haqiqiy ehtimol ko'rsatiladi.</p>
+      </div>
+    </Card>
+  );
+}
+
+/** Bitta aylantirishning o'rtacha xarajati (backend: brbEconomics) — baraban zarar qilmasligini tekshirish uchun */
+function EconomicsCard({ e }) {
+  if (!e) return null;
+  const loss = e.marginPct !== null && e.marginPct < 0;
+  const rows = [
+    ['Balans (so‘m)', e.byType?.balans], ['Akkaunt tarifi (kun)', e.byType?.tarif], ['Botga +kun', e.byType?.bot_kun], ['Chegirma kuponlari (hammasi ishlatilsa)', e.byType?.chegirma],
+  ];
+  return (
+    <Card title="Iqtisod: bitta aylantirish qancha turadi" subtitle={`Haqiqiy ehtimollar bo'yicha o'rtacha. Narxlar: akkaunt tarifi o'rtacha ${money(e.refs?.accountAvg)}, bot tarifi ${money(e.refs?.botMonth)}/oy.`}>
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Stat label="Chipta narxi" value={money(e.ticketPrice)} />
+        <Stat label="Xarajat (pul/kun)" value={money(e.perSpinDirect)} hint="balans + tarif + bot kunlari" />
+        <Stat label="Eng yomon holat" value={money(e.perSpinWorst)} hint="+ barcha kuponlar ishlatilsa" tone={loss ? 'warn' : 'brand'} />
+        <Stat label="Sotilgan chiptadan foyda" value={e.marginPct === null ? '—' : `${e.marginPct}%`} tone={loss ? 'warn' : 'ok'} hint={loss ? 'ZARAR — og‘irliklarni kamaytiring' : 'eng yomon holatda ham'} />
+      </div>
+      <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+        {rows.map(([l, v]) => <div key={l} className="flex justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2"><span className="text-muted">{l}</span><b className="tabular">{money(v || 0)}</b></div>)}
+      </div>
+      <ul className="mt-4 space-y-1 text-xs text-muted">
+        <li>• {e.bigFrom}% dan katta kuponlar jami: <b className="text-fg">{e.bigChancePct}%</b> (chegara {e.bigLimitPct}%){e.bigChancePct > 0 ? ` — taxminan ${Math.round(100 / e.bigChancePct)} ta aylantirishdan 1 tasi` : ''}.</li>
+        <li>• Bo'sh: {e.emptyChancePct}% · Qo'lda beriladigan sovg'a: {e.giftChancePct}% (narxi hisobga kirmagan) · Qo'shimcha aylantirish: {e.extraSpins} ta/aylantirish.</li>
+        <li>• Haftalik bepul chipta har bir faol foydalanuvchiga haftasiga taxminan <b className="text-fg">{money(e.freeWeeklyCost)}</b> turadi (eng yomon holat).</li>
+        {loss && <li className="font-medium text-warn">• Hozirgi og'irliklarda baraban zarar qiladi: katta balans/tarif sovg'alarining og'irligini kamaytiring yoki «Bo'sh» og'irligini oshiring.</li>}
+      </ul>
     </Card>
   );
 }
@@ -196,7 +229,7 @@ export default function Baraban() {
           <Table rows={data.prizes} empty={<Empty title="Sovg'alar yo'q" text="«Yangi sovg'a» tugmasi bilan qo'shing — kamida bittasi bo'lsa baraban ishlaydi." />} columns={[
             { key: 'nomi', title: "Sovg'a", render: (p) => <div className="flex items-center gap-3"><PrizeIcon p={p} /><div><p className="font-medium">{p.nomi}</p>{p.nft && <Badge tone="info">NFT</Badge>}</div></div> },
             { key: 'turi', title: 'Turi', render: (p) => <div><Badge tone={TYPE_TONE[p.turi]}>{data.types[p.turi]}</Badge>{prizeDetail(p, data) && <p className="mt-1 text-xs text-muted">{prizeDetail(p, data)}</p>}</div> },
-            { key: 'chance', title: 'Ehtimol', render: (p) => <div className="min-w-[110px]"><p className="tabular text-sm font-medium">{p.chance}%</p><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2"><div className="h-full bg-brand" style={{ width: `${Math.min(100, p.chance)}%` }} /></div><p className="mt-0.5 text-[11px] text-muted">og'irlik {p.vazn}</p></div> },
+            { key: 'chance', title: 'Ehtimol', render: (p) => <div className="min-w-[110px]"><p className="tabular text-sm font-medium">{p.chance}%</p><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2"><div className="h-full bg-brand" style={{ width: `${Math.min(100, p.chance)}%` }} /></div><p className="mt-0.5 text-[11px] text-muted">og'irlik {p.vazn}{p.big && p.chanceAdmin !== p.chance ? ` · cheklovsiz ${p.chanceAdmin}%` : ''}</p></div> },
             { key: 'soni', title: 'Zaxira', render: (p) => (p.soni < 0 ? <span className="text-muted">cheksiz</span> : p.soni === 0 ? <Badge tone="bad">tugagan</Badge> : <span className="tabular">{num(p.soni)}</span>) },
             { key: 'faol', title: 'Faol', render: (p) => <Switch checked={p.faol} disabled={busy === `f${p.id}`} onChange={(v) => post(`f${p.id}`, { action: 'prize', ...p, faol: v })} /> },
             { key: 'a', title: '', align: 'right', render: (p) => (
@@ -239,6 +272,7 @@ export default function Baraban() {
       {tab === 'settings' && (
         <div className="space-y-6">
           <SettingsCard key={JSON.stringify(data.settings)} s={data.settings} onSaved={apply} />
+          <EconomicsCard e={data.economics} />
           <TicketsCard onSaved={apply} />
         </div>
       )}
