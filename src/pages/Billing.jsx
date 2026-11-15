@@ -174,7 +174,8 @@ function SettingsForm({ data, onSaved }) {
     const body = {
       action: 'save_settings', free_period_days: +f.free_period_days, free_period_plan: f.free_period_plan, yearly_paid_months: +f.yearly_paid_months,
       multi_bot_min: +f.multi_bot_min, multi_bot_discount_pct: +f.multi_bot_discount_pct, referral_pct: +f.referral_pct,
-      reminder_days: String(f.reminder_days).split(/[\s,]+/).map(Number).filter(Boolean), unpaid_reminder_every_days: +f.unpaid_reminder_every_days,
+      reminder_days: String(f.reminder_days).split(/[\s,]+/).map(Number).filter(Boolean), unpaid_reminder_every_days: +f.unpaid_reminder_every_days || 0,
+      delete_after_days: +(f.delete_after_days ?? 7),
       month_days: +f.month_days, year_days: +f.year_days, paused_text: f.paused_text,
     };
     if (await run('s', () => api.post('panel/billing', body))) onSaved();
@@ -189,7 +190,7 @@ function SettingsForm({ data, onSaved }) {
         <Field label="Ko'p bot chegirmasi (%)"><Input type="number" min="0" max="90" value={f.multi_bot_discount_pct} onChange={set('multi_bot_discount_pct')} /></Field>
         <Field label="Platforma referali (%)" hint="Do'st tarif sotib olsa — taklif qilganga"><Input type="number" min="0" max="90" value={f.referral_pct} onChange={set('referral_pct')} /></Field>
         <Field label="Eslatma kunlari" hint="Muddat tugashiga necha kun qolganda, vergul bilan"><Input value={f.reminder_days} onChange={set('reminder_days')} /></Field>
-        <Field label="To'lanmagan botga eslatma (har N kun)" hint="0 = yubormaslik"><Input type="number" min="0" value={f.unpaid_reminder_every_days} onChange={set('unpaid_reminder_every_days')} /></Field>
+        <Field label="To'lanmasa o'chirish (kun)" hint="Muddat tugagach shuncha kun ichida to'lanmasa bot butunlay o'chiriladi. Har kuni ogohlantiriladi. 0 = o'chirmaslik"><Input type="number" min="0" max="90" value={f.delete_after_days ?? 7} onChange={set('delete_after_days')} /></Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="1 oy (kun)"><Input type="number" min="28" max="31" value={f.month_days} onChange={set('month_days')} /></Field>
           <Field label="1 yil (kun)"><Input type="number" min="360" max="366" value={f.year_days} onChange={set('year_days')} /></Field>
@@ -255,7 +256,7 @@ function BotsTab({ plans }) {
               { key: 'bot', title: 'Bot', render: (r) => <div><div className="font-medium">@{r.bot}</div><div className="text-xs text-muted">{r.type} · egasi {r.user_id}</div></div> },
               { key: 'plan', title: 'Tarif', render: (r) => <span className="flex items-center gap-1.5">{r.plan_name}{r.is_free_period && <Badge tone="brand">bepul</Badge>}</span> },
               { key: 'status', title: 'Holat', render: (r) => <Badge tone={STATUS[r.status]?.[1]}>{STATUS[r.status]?.[0] || r.status}</Badge> },
-              { key: 'exp', title: 'Muddat', render: (r) => <div className="tabular"><div>{date(r.expires_at)}</div><div className="text-xs text-muted">{r.status === 'active' ? `${r.days_left} kun qoldi` : PERIOD[r.period] || r.period}</div></div> },
+              { key: 'exp', title: 'Muddat', render: (r) => <div className="tabular"><div>{date(r.expires_at)}</div><div className={r.delete_in_days != null ? 'text-xs text-bad' : 'text-xs text-muted'}>{r.status === 'active' ? `${r.days_left} kun qoldi` : r.delete_in_days != null ? (r.delete_in_days <= 1 ? "ertaga o'chiriladi" : `${r.delete_in_days} kundan keyin o'chiriladi`) : PERIOD[r.period] || r.period}</div></div> },
               { key: 'act', title: '', align: 'right', render: (r) => (
                 <div className="flex justify-end gap-1">
                   <Button size="sm" icon={CalendarPlus} onClick={() => setGrant(r)}>Berish</Button>
@@ -383,7 +384,7 @@ export default function Billing() {
       />
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Faol botlar" value={num(activeTotal)} hint={`${num(freeTotal)} tasi bepul davrda`} />
-        <Stat label="To'xtatilgan" value={num((st.expired || 0) + (st.paused || 0))} hint="Ma'lumotlari saqlanadi" tone="warn" />
+        <Stat label="To'xtatilgan" value={num((st.expired || 0) + (st.paused || 0))} hint={`${data.settings.delete_after_days || 0} kun ichida to'lanmasa o'chiriladi`} tone="warn" />
         <Stat label="Tushum (shu oy)" value={money(st.revenue_month)} hint={`Jami: ${money(st.revenue_total)}`} tone="ok" />
         <Stat label="Referal to'lovlari" value={money(st.referral_paid)} hint={`${data.settings.referral_pct}% har to'lovdan`} />
       </div>
